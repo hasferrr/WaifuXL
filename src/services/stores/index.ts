@@ -5,6 +5,7 @@ export {
   getProgressText,
   type ProcessingStage,
   type ProcessingStatus,
+  type ExecutionProvider,
   type ProgressInfo,
   type ProcessingStoreState,
   type ProcessingStoreActions,

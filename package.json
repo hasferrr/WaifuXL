@@ -10,6 +10,7 @@
     "lint:check": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "upscale:cuda": "python3 scripts/upscale_cuda.py",
     "cloudflare_deploy": "npm run build"
   },
   "dependencies": {

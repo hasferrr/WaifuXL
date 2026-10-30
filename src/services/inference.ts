@@ -2,7 +2,8 @@ import ndarray, { NdArray } from 'ndarray'
 import ops from 'ndarray-ops'
 import { InferenceSession, env as ORTEnv, Tensor, TypedTensor } from 'onnxruntime-web'
 import { INFERENCE_CONFIG } from '@/constants'
-import type { ProgressInfo } from './stores/processingStore'
+import type { ExecutionProvider, ProgressInfo } from './stores/processingStore'
+import { useProcessingStore } from './stores/processingStore'
 import type { UpscaleFactor } from './stores/imageStore'
 
 // Types
@@ -59,6 +60,69 @@ interface ChunkBounds {
 // Session management
 let superSession: InferenceSession | null = null
 let taggerSession: InferenceSession | null = null
+let activeExecutionProvider: ExecutionProvider = 'unknown'
+
+export function getActiveExecutionProvider(): ExecutionProvider {
+  return activeExecutionProvider
+}
+
+export function resetONNX(): void {
+  superSession = null
+  taggerSession = null
+  activeExecutionProvider = 'unknown'
+}
+
+interface WebGPUAdapterInfo {
+  vendor?: string
+  architecture?: string
+  device?: string
+  description?: string
+}
+
+interface WebGPUAdapterWithInfo {
+  info?: WebGPUAdapterInfo
+  requestAdapterInfo?: () => Promise<WebGPUAdapterInfo>
+}
+
+interface NavigatorWithGPU {
+  gpu?: {
+    requestAdapter: (options?: { powerPreference?: 'low-power' | 'high-performance' }) => Promise<unknown>
+  }
+}
+
+/**
+ * Detect client hardware capabilities for WebGPU / GPU acceleration.
+ */
+export async function detectHardwareCapabilities(): Promise<{
+  provider: ExecutionProvider
+  details?: string
+}> {
+  const nav = typeof navigator !== 'undefined' ? (navigator as unknown as NavigatorWithGPU) : undefined
+  if (nav?.gpu) {
+    try {
+      const adapter = await nav.gpu.requestAdapter({ powerPreference: 'high-performance' })
+      if (adapter) {
+        let details = 'WebGPU'
+        const adapterWithInfo = adapter as unknown as WebGPUAdapterWithInfo
+        const info = adapterWithInfo.info ?? (await adapterWithInfo.requestAdapterInfo?.())
+        if (info) {
+          const desc = info.description || info.device || ''
+          const arch = info.architecture || ''
+          const vendor = info.vendor || ''
+          if (desc) {
+            details = desc
+          } else if (vendor || arch) {
+            details = [vendor, arch].filter(Boolean).join(' ')
+          }
+        }
+        return { provider: 'webgpu', details }
+      }
+    } catch (e) {
+      console.debug('WebGPU adapter query failed:', e)
+    }
+  }
+  return { provider: 'wasm', details: 'CPU (WASM SIMD)' }
+}
 
 // Helper to check for abort
 function checkAbort(signal?: AbortSignal): void {
@@ -70,14 +134,74 @@ function checkAbort(signal?: AbortSignal): void {
 async function initializeONNX(onProgress?: ProgressCallback): Promise<void> {
   if (superSession && taggerSession) return
 
-  onProgress?.({ stage: 'loading-models', progress: 0 })
-
+  // Configure WASM fallback environment
   ORTEnv.wasm.proxy = true
   const maxThreads = Math.min(Math.floor((navigator.hardwareConcurrency ?? 1) / 2), 16)
   ORTEnv.wasm.numThreads = Math.max(1, maxThreads)
   ORTEnv.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.23.2/dist/'
 
-  const onnxOptions: InferenceSession.SessionOptions = {
+  // Configure WebGPU environment with high-performance discrete GPU request
+  if (ORTEnv.webgpu) {
+    ORTEnv.webgpu.powerPreference = 'high-performance'
+  }
+
+  const nav = typeof navigator !== 'undefined' ? (navigator as unknown as NavigatorWithGPU) : undefined
+  const isWebGPUSupported = Boolean(nav?.gpu)
+
+  if (isWebGPUSupported) {
+    try {
+      onProgress?.({ stage: 'loading-models', progress: 10, provider: 'webgpu' })
+
+      const webgpuOptions: InferenceSession.SessionOptions = {
+        executionProviders: ['webgpu'],
+        graphOptimizationLevel: 'all',
+        enableCpuMemArena: true,
+        enableMemPattern: true,
+        executionMode: 'sequential',
+      }
+
+      onProgress?.({ stage: 'loading-models', progress: 30, provider: 'webgpu' })
+
+      // Attempt creating sessions with WebGPU
+      const [tagger, superRes] = await Promise.all([
+        InferenceSession.create('/models/tagger.onnx', webgpuOptions),
+        InferenceSession.create('/models/superRes.onnx', webgpuOptions),
+      ])
+
+      taggerSession = tagger
+      superSession = superRes
+      activeExecutionProvider = 'webgpu'
+
+      // Query adapter info if possible to get device details
+      let deviceName: string | undefined
+      try {
+        const adapter = await nav?.gpu?.requestAdapter({ powerPreference: 'high-performance' })
+        if (adapter) {
+          const adapterWithInfo = adapter as unknown as WebGPUAdapterWithInfo
+          const info = adapterWithInfo.info ?? (await adapterWithInfo.requestAdapterInfo?.())
+          if (info) {
+            deviceName = info.description || info.device || [info.vendor, info.architecture].filter(Boolean).join(' ')
+          }
+        }
+      } catch {
+        // ignore
+      }
+
+      useProcessingStore.getState().setActiveProvider('webgpu', deviceName)
+      console.info('Successfully initialized ONNX Runtime with WebGPU acceleration:', deviceName || 'GPU')
+      onProgress?.({ stage: 'loading-models', progress: 100, provider: 'webgpu' })
+      return
+    } catch (err) {
+      console.warn('WebGPU initialization failed, falling back to WebAssembly (WASM):', err)
+      taggerSession = null
+      superSession = null
+    }
+  }
+
+  // Fallback to WASM
+  onProgress?.({ stage: 'loading-models', progress: 20, provider: 'wasm' })
+
+  const wasmOptions: InferenceSession.SessionOptions = {
     executionProviders: ['wasm'],
     graphOptimizationLevel: 'all',
     enableCpuMemArena: true,
@@ -85,14 +209,20 @@ async function initializeONNX(onProgress?: ProgressCallback): Promise<void> {
     executionMode: 'sequential',
   }
 
-  onProgress?.({ stage: 'loading-models', progress: 25 })
+  onProgress?.({ stage: 'loading-models', progress: 40, provider: 'wasm' })
 
-    ;[taggerSession, superSession] = await Promise.all([
-      InferenceSession.create('/models/tagger.onnx', onnxOptions),
-      InferenceSession.create('/models/superRes.onnx', onnxOptions),
-    ])
+  const [tagger, superRes] = await Promise.all([
+    InferenceSession.create('/models/tagger.onnx', wasmOptions),
+    InferenceSession.create('/models/superRes.onnx', wasmOptions),
+  ])
 
-  onProgress?.({ stage: 'loading-models', progress: 100 })
+  taggerSession = tagger
+  superSession = superRes
+  activeExecutionProvider = 'wasm'
+  useProcessingStore.getState().setActiveProvider('wasm', 'CPU (WASM SIMD)')
+  console.info('Initialized ONNX Runtime with CPU WebAssembly (WASM) provider.')
+
+  onProgress?.({ stage: 'loading-models', progress: 100, provider: 'wasm' })
 }
 
 // Pure upscale function - returns result without side effects

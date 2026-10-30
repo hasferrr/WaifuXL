@@ -1,0 +1,12 @@
+# WaifuXL Desktop CUDA Acceleration Requirements
+# Install with: uv pip install -r scripts/requirements.txt (or pip install -r scripts/requirements.txt)
+onnxruntime-gpu==1.20.2
+numpy>=1.24.0
+pillow>=10.0.0
+tqdm>=4.66.0
+nvidia-cuda-runtime-cu12>=12.0.0
+nvidia-cublas-cu12>=12.0.0
+nvidia-cudnn-cu12>=9.0.0
+nvidia-curand-cu12>=10.0.0
+nvidia-cufft-cu12>=11.0.0
+nvidia-nvjitlink-cu12>=12.0.0

@@ -66,15 +66,19 @@ NEXT_PUBLIC_SUPER_RES_MODEL_URL=https://example.com/superRes.onnx
 To upscale images directly on your desktop using an NVIDIA GPU (CUDA) with automatic CPU fallback:
 
 ```bash
-# Setup Python virtual environment and install dependencies
-python3 -m venv .venv
-.venv/bin/pip install -r scripts/requirements.txt
+# Setup Python virtual environment and install dependencies with uv
+uv venv
+uv pip install -r scripts/requirements.txt
 
-# Run 2x upscale (default) with image tagging via Bun
+# Run 2x upscale (default) with image tagging via Bun or uv/Python
 bun run upscale:cuda -- path/to/image.png
+# or directly with uv / Python:
+uv run python scripts/upscale_cuda.py path/to/image.png
+python3 scripts/upscale_cuda.py path/to/image.png
 
 # Custom scale factor (2, 4, or 8) and output path
 bun run upscale:cuda -- -i path/to/image.png -o path/to/output.png -s 4
+uv run python scripts/upscale_cuda.py -i path/to/image.png -o path/to/output.png -s 4
 ```
 
 A few notes:

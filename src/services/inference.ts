@@ -43,7 +43,7 @@ interface ImageNdArray extends NdArray<Uint8Array> {
 }
 
 // Constants
-const { CHUNK_SIZE, PAD_SIZE, TAG_INDICES } = INFERENCE_CONFIG
+const { CHUNK_SIZE, PAD_SIZE, MODEL_URLS, TAG_INDICES } = INFERENCE_CONFIG
 
 // Chunk processing types
 interface ChunkBounds {
@@ -164,8 +164,8 @@ async function initializeONNX(onProgress?: ProgressCallback): Promise<void> {
 
       // Attempt creating sessions with WebGPU
       const [tagger, superRes] = await Promise.all([
-        InferenceSession.create('/models/tagger.onnx', webgpuOptions),
-        InferenceSession.create('/models/superRes.onnx', webgpuOptions),
+        InferenceSession.create(MODEL_URLS.TAGGER, webgpuOptions),
+        InferenceSession.create(MODEL_URLS.SUPER_RES, webgpuOptions),
       ])
 
       taggerSession = tagger
@@ -212,8 +212,8 @@ async function initializeONNX(onProgress?: ProgressCallback): Promise<void> {
   onProgress?.({ stage: 'loading-models', progress: 40, provider: 'wasm' })
 
   const [tagger, superRes] = await Promise.all([
-    InferenceSession.create('/models/tagger.onnx', wasmOptions),
-    InferenceSession.create('/models/superRes.onnx', wasmOptions),
+    InferenceSession.create(MODEL_URLS.TAGGER, wasmOptions),
+    InferenceSession.create(MODEL_URLS.SUPER_RES, wasmOptions),
   ])
 
   taggerSession = tagger

@@ -72,6 +72,10 @@ export const UPSCALE_FACTORS = [2, 4, 8] as const
 export const INFERENCE_CONFIG = {
   CHUNK_SIZE: 256,
   PAD_SIZE: 32,
+  MODEL_URLS: {
+    TAGGER: process.env.NEXT_PUBLIC_TAGGER_MODEL_URL?.trim() || '/models/tagger.onnx',
+    SUPER_RES: process.env.NEXT_PUBLIC_SUPER_RES_MODEL_URL?.trim() || '/models/superRes.onnx',
+  },
   TAG_INDICES: {
     DESCRIPTORS_START: 0,
     DESCRIPTORS_END: 2000,

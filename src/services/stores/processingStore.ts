@@ -1,3 +1,6 @@
+// Modified by hasferrr (2026): Added hardware execution provider state and progress stage provider details.
+// Licensed under the Apache License, Version 2.0.
+
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { AppError } from '../errors'

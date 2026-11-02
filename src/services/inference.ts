@@ -1,3 +1,6 @@
+// Modified by hasferrr (2026): Added WebGPU execution provider with WASM fallback and configurable ONNX model URLs.
+// Licensed under the Apache License, Version 2.0.
+
 import ndarray, { NdArray } from 'ndarray'
 import ops from 'ndarray-ops'
 import { InferenceSession, env as ORTEnv, Tensor, TypedTensor } from 'onnxruntime-web'

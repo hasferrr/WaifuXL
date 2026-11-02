@@ -1,3 +1,6 @@
+// Modified by hasferrr (2026): Support configuring ONNX model URLs via environment variables.
+// Licensed under the Apache License, Version 2.0.
+
 // Theme colors - centralized for consistency
 export const THEME_COLORS = {
   primary: '#FF869C',

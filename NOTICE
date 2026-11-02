@@ -1,0 +1,12 @@
+WaifuXL
+Copyright TheFutureGadgetsLab
+
+This product includes software originally developed by TheFutureGadgetsLab
+(https://github.com/TheFutureGadgetsLab/WaifuXL), licensed under the
+Apache License, Version 2.0.
+
+Modifications and additions Copyright 2026 hasferrr:
+- Added WebGPU discrete GPU acceleration with graceful WASM fallback in ONNX Runtime Web (src/services/inference.ts)
+- Added active hardware accelerator status badge and progress tracking (src/components/sidebar/ActionButtons.tsx, src/services/stores/processingStore.ts, src/services/stores/index.ts)
+- Added environment variable configuration for ONNX model URLs (src/constants.ts, src/services/inference.ts, .env.example)
+- Added desktop NVIDIA CUDA super-resolution and tagging CLI (scripts/upscale_cuda.py, scripts/requirements.txt)

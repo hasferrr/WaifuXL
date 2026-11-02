@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2026 hasferrr
+# Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 """
 WaifuXL Desktop Super-Resolution & Image Tagger CLI
 Accelerated via NVIDIA CUDA Tensor Cores with automatic fallback.

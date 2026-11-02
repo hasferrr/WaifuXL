@@ -1,5 +1,8 @@
 'use client'
 
+// Modified by hasferrr (2026): Added active hardware accelerator status badge and detection indicator.
+// Licensed under the Apache License, Version 2.0.
+
 import { memo, useCallback, useEffect } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'

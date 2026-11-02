@@ -22,7 +22,16 @@ In general, the [Real-ESRGAN](https://arxiv.org/abs/2107.10833) will outperform 
 
 # How it Works
 
-Using the [Onnx Runtime](https://onnxruntime.ai/), we stream the weights of our ML models directly onto your device to be executed locally in WebAssembly. Doing so allows us to provide this service solely through a static webpage, no backend for model execution needed. This has the added benefit of enabling the privacy of your images--your images are not, and never will be, sent to us.
+Using the [Onnx Runtime](https://onnxruntime.ai/), we stream the weights of our ML models directly onto your device to be executed locally via **WebGPU** (for hardware-accelerated discrete/integrated GPU inference) with an automatic fallback to **WebAssembly (WASM)**. Doing so allows us to provide this service solely through a static webpage, no backend for model execution needed. This has the added benefit of enabling the privacy of your images--your images are not, and never will be, sent to us.
+
+## Fork Modifications & Enhancements
+
+This repository includes modifications by **hasferrr** (2026) licensed under the [Apache License 2.0](LICENSE) (see [NOTICE](NOTICE) for full details):
+
+- **WebGPU Acceleration**: High-performance WebGPU execution provider in `onnxruntime-web` with automatic graceful fallback to multi-threaded WASM.
+- **Hardware Accelerator Badge**: Live sidebar badge and progress status indicating whether inference is running on **WebGPU** or **WASM (CPU)**.
+- **Configurable Model URLs**: Support for overriding ONNX model URLs (`tagger.onnx` and `superRes.onnx`) via `NEXT_PUBLIC_TAGGER_MODEL_URL` and `NEXT_PUBLIC_SUPER_RES_MODEL_URL` environment variables.
+- **Desktop NVIDIA CUDA CLI**: Native Python CLI (`scripts/upscale_cuda.py`) for local NVIDIA RTX / CUDA GPU super-resolution and image tagging.
 
 ## Models
 
@@ -30,25 +39,47 @@ For our super resolution network we are using the state-of-the-art [Real-ESRGAN]
 
 ## Site
 
-[Onnx Runtime](https://onnxruntime.ai/) is multithreaded and supports SIMD instructions--while upscaling on a phone or a laptop is suprisingly quick, using a beefier computer will bring noticable benefits. We're hosted on [Cloudflare Pages](https://pages.cloudflare.com/) which provides unlimited bandwidth. The site is written in React with Next.js and TailwindCSS.
+[Onnx Runtime](https://onnxruntime.ai/) supports WebGPU as well as multithreaded SIMD WebAssembly--while upscaling on a phone or a laptop is surprisingly quick, using a beefier computer or discrete GPU will bring noticeable benefits. We're hosted on [Cloudflare Pages](https://pages.cloudflare.com/) which provides unlimited bandwidth. The site is written in React with Next.js and Material UI.
 
 # Running Locally
 
-If you'd like to run locally, this should get you started:
+If you'd like to run the web app locally with [Bun](https://bun.sh/):
 
 ```bash
 git clone https://github.com/TheFutureGadgetsLab/WaifuXL
 cd WaifuXL
-git checkout de_spaghetti
-npm i
-npm run dev
+bun install
+bun run dev
+```
+
+### Custom Model URLs (Optional)
+
+By default, the web app loads models from `/models/tagger.onnx` and `/models/superRes.onnx` (`public/models/`). To load them from an external CDN or custom URL, copy `.env.example` to `.env` and set:
+
+```env
+NEXT_PUBLIC_TAGGER_MODEL_URL=https://example.com/tagger.onnx
+NEXT_PUBLIC_SUPER_RES_MODEL_URL=https://example.com/superRes.onnx
+```
+
+### Desktop NVIDIA CUDA CLI
+
+To upscale images directly on your desktop using an NVIDIA GPU (CUDA) with automatic CPU fallback:
+
+```bash
+# Setup Python virtual environment and install dependencies
+python3 -m venv .venv
+.venv/bin/pip install -r scripts/requirements.txt
+
+# Run 2x upscale (default) with image tagging via Bun
+bun run upscale:cuda -- path/to/image.png
+
+# Custom scale factor (2, 4, or 8) and output path
+bun run upscale:cuda -- -i path/to/image.png -o path/to/output.png -s 4
 ```
 
 A few notes:
 
-- The main branch no longer works for some reason. We've been doing a full rewrite for a while in the `de_spaghetti` branch, hence the checkout above.
-- Multithreading is hard to do locally because of [Spectre](<https://en.wikipedia.org/wiki/Spectre_(security_vulnerability)>). You can get multithreading working by making sure Google Chrome is closed, then launching it from the command line with the following argument: `--enable-features=SharedArrayBuffer`
-- After the website rewrite, we will be working on GPU accelerated versions of WaifuXL using PyTorch, ONNX Runtime, or AITemplate. Once this is done it will need to be run locally on your own computer, but the performance uplift should be _significant_.
+- Multithreading in WASM requires `SharedArrayBuffer` because of [Spectre](<https://en.wikipedia.org/wiki/Spectre_(security_vulnerability)>). If WebGPU is unavailable, you can ensure WASM multithreading works locally by launching Chrome from the command line with `--enable-features=SharedArrayBuffer`.
 
 # Contribution Guide
 

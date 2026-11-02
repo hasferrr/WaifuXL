@@ -29,6 +29,7 @@ Using the [Onnx Runtime](https://onnxruntime.ai/), we stream the weights of our 
 This repository includes modifications by **hasferrr** (2026) licensed under the [Apache License 2.0](LICENSE) (see [NOTICE](NOTICE) for full details):
 
 - **WebGPU Acceleration**: High-performance WebGPU execution provider in `onnxruntime-web` with automatic graceful fallback to multi-threaded WASM.
+- **Persistent Browser Model Caching**: Caches ONNX models (`tagger.onnx` and `superRes.onnx`, including custom URLs) in the browser's persistent Cache Storage API (`window.caches`) alongside immutable `Cache-Control` headers.
 - **Hardware Accelerator Badge**: Live sidebar badge and progress status indicating whether inference is running on **WebGPU** or **WASM (CPU)**.
 - **Configurable Model URLs**: Support for overriding ONNX model URLs (`tagger.onnx` and `superRes.onnx`) via `NEXT_PUBLIC_TAGGER_MODEL_URL` and `NEXT_PUBLIC_SUPER_RES_MODEL_URL` environment variables.
 - **Desktop NVIDIA CUDA CLI**: Native Python CLI (`scripts/upscale_cuda.py`) for local NVIDIA RTX / CUDA GPU super-resolution and image tagging.

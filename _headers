@@ -1,5 +1,11 @@
+# Modified by hasferrr (2026): Added immutable Cache-Control headers for ONNX models and tags.
+# Licensed under the Apache License, Version 2.0.
 https://*.pages.dev/*
   X-Robots-Tag: noindex
 /*
   Cross-Origin-Embedder-Policy: require-corp
   Cross-Origin-Opener-Policy: same-origin
+/models/*
+  Cache-Control: public, max-age=31536000, immutable
+/tags.json
+  Cache-Control: public, max-age=31536000, immutable

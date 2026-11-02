@@ -7,6 +7,7 @@ Apache License, Version 2.0.
 
 Modifications and additions Copyright 2026 hasferrr:
 - Added WebGPU discrete GPU acceleration with graceful WASM fallback in ONNX Runtime Web (src/services/inference.ts)
+- Added persistent browser Cache Storage API caching and immutable Cache-Control headers for ONNX models and tags (src/services/inference.ts, next.config.mjs, _headers)
 - Added active hardware accelerator status badge and progress tracking (src/components/sidebar/ActionButtons.tsx, src/services/stores/processingStore.ts, src/services/stores/index.ts)
 - Added environment variable configuration for ONNX model URLs and fork repository links (src/constants.ts, src/services/inference.ts, src/app/about/page.tsx, .env.example)
 - Added desktop NVIDIA CUDA super-resolution and tagging CLI (scripts/upscale_cuda.py, scripts/requirements.txt)

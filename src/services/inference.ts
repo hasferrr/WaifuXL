@@ -1,4 +1,4 @@
-// Modified by hasferrr (2026): Added WebGPU execution provider with WASM fallback and configurable ONNX model URLs.
+// Modified by hasferrr (2026): Added WebGPU execution provider with WASM fallback, configurable ONNX model URLs, and persistent browser Cache Storage for models.
 // Licensed under the Apache License, Version 2.0.
 
 import ndarray, { NdArray } from 'ndarray'
@@ -61,9 +61,46 @@ interface ChunkBounds {
 }
 
 // Session management
+const MODEL_CACHE_NAME = 'waifuxl-models-v1'
 let superSession: InferenceSession | null = null
 let taggerSession: InferenceSession | null = null
 let activeExecutionProvider: ExecutionProvider = 'unknown'
+
+/**
+ * Fetch an ONNX model binary with persistent browser caching via the Cache Storage API
+ * and HTTP force-cache fallback. Returns a fresh Uint8Array so ONNX Runtime Web Workers
+ * can safely transfer the underlying ArrayBuffer without detaching cached data.
+ */
+async function fetchModelWithCache(url: string): Promise<Uint8Array> {
+  if (typeof window !== 'undefined' && 'caches' in window) {
+    try {
+      const cache = await window.caches.open(MODEL_CACHE_NAME)
+      const cachedResponse = await cache.match(url)
+      if (cachedResponse && cachedResponse.ok) {
+        return new Uint8Array(await cachedResponse.arrayBuffer())
+      }
+
+      const response = await fetch(url, { cache: 'force-cache' })
+      if (!response.ok) {
+        throw new Error(`Failed to fetch model (${response.status} ${response.statusText}): ${url}`)
+      }
+
+      await cache.put(url, response.clone()).catch((err) => {
+        console.warn('Could not persist model to Cache Storage:', err)
+      })
+
+      return new Uint8Array(await response.arrayBuffer())
+    } catch (err) {
+      console.warn('Cache Storage lookup failed, falling back to network fetch:', err)
+    }
+  }
+
+  const response = await fetch(url, { cache: 'force-cache' })
+  if (!response.ok) {
+    throw new Error(`Failed to fetch model (${response.status} ${response.statusText}): ${url}`)
+  }
+  return new Uint8Array(await response.arrayBuffer())
+}
 
 export function getActiveExecutionProvider(): ExecutionProvider {
   return activeExecutionProvider
@@ -165,10 +202,17 @@ async function initializeONNX(onProgress?: ProgressCallback): Promise<void> {
 
       onProgress?.({ stage: 'loading-models', progress: 30, provider: 'webgpu' })
 
+      const [taggerBuffer, superResBuffer] = await Promise.all([
+        fetchModelWithCache(MODEL_URLS.TAGGER),
+        fetchModelWithCache(MODEL_URLS.SUPER_RES),
+      ])
+
+      onProgress?.({ stage: 'loading-models', progress: 70, provider: 'webgpu' })
+
       // Attempt creating sessions with WebGPU
       const [tagger, superRes] = await Promise.all([
-        InferenceSession.create(MODEL_URLS.TAGGER, webgpuOptions),
-        InferenceSession.create(MODEL_URLS.SUPER_RES, webgpuOptions),
+        InferenceSession.create(taggerBuffer, webgpuOptions),
+        InferenceSession.create(superResBuffer, webgpuOptions),
       ])
 
       taggerSession = tagger
@@ -214,9 +258,16 @@ async function initializeONNX(onProgress?: ProgressCallback): Promise<void> {
 
   onProgress?.({ stage: 'loading-models', progress: 40, provider: 'wasm' })
 
+  const [taggerBuffer, superResBuffer] = await Promise.all([
+    fetchModelWithCache(MODEL_URLS.TAGGER),
+    fetchModelWithCache(MODEL_URLS.SUPER_RES),
+  ])
+
+  onProgress?.({ stage: 'loading-models', progress: 75, provider: 'wasm' })
+
   const [tagger, superRes] = await Promise.all([
-    InferenceSession.create(MODEL_URLS.TAGGER, wasmOptions),
-    InferenceSession.create(MODEL_URLS.SUPER_RES, wasmOptions),
+    InferenceSession.create(taggerBuffer, wasmOptions),
+    InferenceSession.create(superResBuffer, wasmOptions),
   ])
 
   taggerSession = tagger
@@ -302,7 +353,7 @@ let cachedTags: string[] | null = null
 
 async function loadTags(): Promise<string[]> {
   if (cachedTags) return cachedTags
-  const response = await fetch('/tags.json')
+  const response = await fetch('/tags.json', { cache: 'force-cache' })
   const tags: string[] = (await response.json()).map((tag: [number, string]) => tag[1])
   cachedTags = tags
   return tags

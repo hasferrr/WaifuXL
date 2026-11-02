@@ -13,7 +13,8 @@ export const THEME_COLORS = {
 
 // External links and brand info
 export const EXTERNAL_LINKS = {
-  github: 'https://github.com/TheFutureGadgetsLab',
+  github: 'https://github.com/hasferrr/WaifuXL',
+  upstreamGithub: 'https://github.com/TheFutureGadgetsLab',
   kofi: 'https://ko-fi.com/thefuturegadgetslab',
   kofiHandle: 'thefuturegadgetslab',
   kofiWidgetScript: 'https://storage.ko-fi.com/cdn/widget/Widget_2.js',

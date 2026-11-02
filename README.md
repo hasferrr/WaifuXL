@@ -46,7 +46,7 @@ For our super resolution network we are using the state-of-the-art [Real-ESRGAN]
 If you'd like to run the web app locally with [Bun](https://bun.sh/):
 
 ```bash
-git clone https://github.com/TheFutureGadgetsLab/WaifuXL
+git clone https://github.com/hasferrr/WaifuXL
 cd WaifuXL
 bun install
 bun run dev

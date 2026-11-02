@@ -1,5 +1,8 @@
 'use client'
 
+// Modified by hasferrr (2026): Retained upstream Future Gadgets Lab link and added fork repository link.
+// Licensed under the Apache License, Version 2.0.
+
 import { PageLayout } from '@/components/layout'
 import { alpha } from '@mui/material/styles'
 import { Box, Chip, Grid, Paper, Typography } from '@mui/material'
@@ -84,17 +87,30 @@ export default function AboutPage() {
                 <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.7, mb: 2 }}>
                   We are the Future Gadgets Lab, a small and elite team of chuds.
                 </Typography>
-                <Chip
-                  icon={<GitHub />}
-                  label="Future Gadgets Lab"
-                  component="a"
-                  href={EXTERNAL_LINKS.github}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  clickable
-                  color="primary"
-                  variant="outlined"
-                />
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  <Chip
+                    icon={<GitHub />}
+                    label="Future Gadgets Lab"
+                    component="a"
+                    href={EXTERNAL_LINKS.upstreamGithub}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    clickable
+                    color="primary"
+                    variant="outlined"
+                  />
+                  <Chip
+                    icon={<GitHub />}
+                    label="hasferrr/WaifuXL (Fork)"
+                    component="a"
+                    href={EXTERNAL_LINKS.github}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    clickable
+                    color="primary"
+                    variant="outlined"
+                  />
+                </Box>
               </Section>
             </Grid>
           </Grid>

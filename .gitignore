@@ -10,6 +10,7 @@
 
 # next.js
 /.next/
+next-env.d.ts
 
 # production
 /build
@@ -54,4 +55,3 @@ CLAUDE.md
 .venv/
 venv/
 
-AGENTS.md
